@@ -29,14 +29,14 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/sandeepkumardev/cctrack"
-"Bug Tracker" = "https://github.com/sandeepkumardev/cctrack/issues"
+Homepage = "https://github.com/Sk786/cctrack"
+"Bug Tracker" = "https://github.com/Sk786/cctrack/issues"
 
 [project.scripts]
 cctrack = "cctrack.main:app"
 cctrack-prompt = "cctrack.prompt_cmd:main"
 
-[dependency-groups]
+[project.optional-dependencies]
 dev = [
     "pytest>=8.0",
     "twine>=5.0",
