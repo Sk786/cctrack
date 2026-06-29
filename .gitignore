@@ -1,0 +1,40 @@
+# planning and local dev helpers — not for the public repo
+PLAN.md
+examples.sh
+
+# python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# build and packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# database (generated at runtime)
+*.db
+*.sqlite
+*.sqlite3
+
+# test cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# os
+.DS_Store
+Thumbs.db
+
+# user price overrides stay local
+# (~/.config/cctrack/prices.json is outside the repo anyway)

@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cctrack"
+version = "0.1.0"
+description = "Track and analyze AI token usage from Claude Code and other CLI agents"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+keywords = ["claude", "ai", "token", "usage", "cli", "terminal"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "typer>=0.12",
+    "rich>=13.0",
+    "pydantic>=2.0",
+    "plotext>=5.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/sandeepkumardev/cctrack"
+"Bug Tracker" = "https://github.com/sandeepkumardev/cctrack/issues"
+
+[project.scripts]
+cctrack = "cctrack.main:app"
+cctrack-prompt = "cctrack.prompt_cmd:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "twine>=5.0",
+    "build>=1.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["cctrack"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "cctrack/",
+    "README.md",
+    "pyproject.toml",
+]
