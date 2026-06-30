@@ -20,7 +20,7 @@ $ cctrack today
 ## Install
 
 ```bash
-pip install cctrack
+pip install cctrack-ai
 ```
 
 Or from source:

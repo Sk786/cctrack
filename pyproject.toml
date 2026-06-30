@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "cctrack"
+name = "cctrack-ai"
 version = "0.1.0"
 description = "Track and analyze AI token usage from Claude Code and other CLI agents"
 readme = "README.md"
