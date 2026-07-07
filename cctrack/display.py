@@ -386,7 +386,7 @@ def render_projects_table(rows: list[dict]) -> Table:
     return table
 
 
-def render_setup_guide(projects_dir: str, db_path: str, prices_path: str, user_prices_path: str):
+def render_setup_guide(projects_dir: str, db_path: str, prices_path: str, user_prices_path: str, openai_key_path: str = ""):
     from rich.padding import Padding
 
     console.print()
@@ -401,16 +401,19 @@ def render_setup_guide(projects_dir: str, db_path: str, prices_path: str, user_p
     console.print(f"  SQLite database      : [cyan]{db_path}[/cyan]")
     console.print(f"  Bundled prices       : [cyan]{prices_path}[/cyan]")
     console.print(f"  Custom prices (opt.) : [cyan]{user_prices_path}[/cyan]")
+    if openai_key_path:
+        console.print(f"  OpenAI key (opt.)    : [cyan]{openai_key_path}[/cyan]")
     console.print()
 
     console.print("[bold]Commands[/bold]")
     cmds = [
-        ("cctrack today",    "Token usage for today"),
-        ("cctrack weekly",   "Last 7 days breakdown + bar chart"),
-        ("cctrack stats",    "All-time summary by model"),
-        ("cctrack projects", "Usage broken down by project"),
-        ("cctrack prices",   "Show model pricing"),
-        ("cctrack prompt",   "Compact string for shell prompt"),
+        ("cctrack today",        "Token usage for today"),
+        ("cctrack weekly",       "Last 7 days breakdown + bar chart"),
+        ("cctrack stats",        "All-time summary by model"),
+        ("cctrack projects",     "Usage broken down by project"),
+        ("cctrack prices",       "Show model pricing"),
+        ("cctrack prompt",       "Compact string for shell prompt"),
+        ("cctrack openai-sync",  "Fetch usage from OpenAI Usage API"),
     ]
     for cmd, desc in cmds:
         console.print(f"  [bold cyan]{cmd:<24}[/bold cyan] {desc}")

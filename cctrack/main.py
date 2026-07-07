@@ -3,7 +3,10 @@ from datetime import date, timedelta
 import typer
 
 from .parser import parse_all
-from .config import load_prices, get_user_prices_path, get_bundled_prices_path, get_claude_projects_dir
+from .config import (
+    load_prices, get_user_prices_path, get_bundled_prices_path, get_claude_projects_dir,
+    get_openai_api_key, save_openai_api_key, get_openai_key_path,
+)
 from .storage import sync, query_range, query_all, query_by_project, get_date_bounds, get_db_path, query_today_totals
 from .stats import summarize_rows, daily_breakdown
 from .display import (
@@ -144,7 +147,52 @@ def setup():
         db_path=str(get_db_path()),
         prices_path=str(get_bundled_prices_path()),
         user_prices_path=str(get_user_prices_path()),
+        openai_key_path=str(get_openai_key_path()),
     )
+
+
+@app.command(name="openai-sync")
+def openai_sync(
+    api_key: str = typer.Option(None, "--api-key", "-k", help="OpenAI API key (saved to ~/.config/cctrack/openai_key)."),
+    days: int = typer.Option(30, "--days", "-d", help="How many days of history to fetch (max 90)."),
+):
+    """Fetch token usage from the OpenAI Usage API and store it in the local DB.
+
+    Requires an API key with the usage.read permission.
+    The key is saved to ~/.config/cctrack/openai_key for future runs.
+    You can also set the OPENAI_API_KEY environment variable.
+    """
+    from .openai_client import fetch_openai_usage
+    from .storage import upsert_entries, init_db
+
+    if api_key:
+        save_openai_api_key(api_key)
+        console.print(f"[dim]API key saved to {get_openai_key_path()}[/dim]")
+
+    key = get_openai_api_key()
+    if not key:
+        console.print(
+            "[red]No OpenAI API key found.[/red]\n"
+            "Pass one with [bold]--api-key sk-...[/bold] or set [bold]OPENAI_API_KEY[/bold]."
+        )
+        raise typer.Exit(1)
+
+    days = max(1, min(days, 90))
+    console.print(f"[dim]Fetching OpenAI usage for the last {days} days…[/dim]")
+
+    try:
+        entries = fetch_openai_usage(key, days=days)
+    except RuntimeError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(1)
+
+    if not entries:
+        console.print("[yellow]No usage data returned from OpenAI.[/yellow]")
+        raise typer.Exit()
+
+    init_db()
+    new = upsert_entries(entries)
+    console.print(f"[green]Synced {len(entries)} OpenAI usage records ({new} new).[/green]")
 
 
 @app.command()

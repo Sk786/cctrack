@@ -1,6 +1,6 @@
 {
-  "_comment": "Prices in USD per 1,000,000 tokens. Source: https://anthropic.com/pricing",
-  "_updated": "2026-06-24",
+  "_comment": "Prices in USD per 1,000,000 tokens.",
+  "_updated": "2026-07-07",
   "models": {
     "claude-sonnet-4-6": {
       "input": 3.00,
@@ -19,6 +19,42 @@
       "output": 4.00,
       "cache_write": 1.00,
       "cache_read": 0.08
+    },
+    "gpt-4o": {
+      "input": 2.50,
+      "output": 10.00,
+      "cache_write": 0.00,
+      "cache_read": 1.25
+    },
+    "gpt-4o-mini": {
+      "input": 0.15,
+      "output": 0.60,
+      "cache_write": 0.00,
+      "cache_read": 0.075
+    },
+    "gpt-4.1": {
+      "input": 2.00,
+      "output": 8.00,
+      "cache_write": 0.00,
+      "cache_read": 0.50
+    },
+    "gpt-4.1-mini": {
+      "input": 0.40,
+      "output": 1.60,
+      "cache_write": 0.00,
+      "cache_read": 0.10
+    },
+    "o3": {
+      "input": 10.00,
+      "output": 40.00,
+      "cache_write": 0.00,
+      "cache_read": 2.50
+    },
+    "o4-mini": {
+      "input": 1.10,
+      "output": 4.40,
+      "cache_write": 0.00,
+      "cache_read": 0.275
     }
   },
   "default": {

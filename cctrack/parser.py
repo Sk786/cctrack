@@ -16,6 +16,7 @@ class TokenEntry:
     output_tokens: int
     cache_write_tokens: int
     cache_read_tokens: int
+    provider: str = "claude"
 
 
 def _parse_project_name(jsonl_path: Path) -> str:

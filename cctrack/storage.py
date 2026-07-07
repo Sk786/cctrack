@@ -35,9 +35,14 @@ def init_db():
                 output_tokens INTEGER NOT NULL DEFAULT 0,
                 cache_write_tokens INTEGER NOT NULL DEFAULT 0,
                 cache_read_tokens INTEGER NOT NULL DEFAULT 0,
+                provider TEXT NOT NULL DEFAULT 'claude',
                 PRIMARY KEY (session_id, timestamp)
             )
         """)
+        # migrate existing DBs that lack the provider column
+        cols = {row[1] for row in conn.execute("PRAGMA table_info(usage)").fetchall()}
+        if "provider" not in cols:
+            conn.execute("ALTER TABLE usage ADD COLUMN provider TEXT NOT NULL DEFAULT 'claude'")
 
 
 def upsert_entries(entries: list[TokenEntry]) -> int:
@@ -49,8 +54,8 @@ def upsert_entries(entries: list[TokenEntry]) -> int:
             """
             INSERT OR IGNORE INTO usage
                 (session_id, timestamp, model, project,
-                 input_tokens, output_tokens, cache_write_tokens, cache_read_tokens)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                 input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, provider)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 (
@@ -62,6 +67,7 @@ def upsert_entries(entries: list[TokenEntry]) -> int:
                     e.output_tokens,
                     e.cache_write_tokens,
                     e.cache_read_tokens,
+                    e.provider,
                 )
                 for e in entries
             ],
