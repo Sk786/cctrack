@@ -1,6 +1,6 @@
 {
   "_comment": "Prices in USD per 1,000,000 tokens.",
-  "_updated": "2026-07-07",
+  "_updated": "2026-10-17",
   "models": {
     "claude-sonnet-4-6": {
       "input": 3.00,
@@ -9,16 +9,16 @@
       "cache_read": 0.30
     },
     "claude-opus-4-8": {
-      "input": 15.00,
-      "output": 75.00,
-      "cache_write": 18.75,
-      "cache_read": 1.50
+      "input": 5.00,
+      "output": 25.00,
+      "cache_write": 6.25,
+      "cache_read": 0.50
     },
     "claude-haiku-4-5": {
-      "input": 0.80,
-      "output": 4.00,
-      "cache_write": 1.00,
-      "cache_read": 0.08
+      "input": 1.00,
+      "output": 5.00,
+      "cache_write": 1.25,
+      "cache_read": 0.10
     },
     "gpt-4o": {
       "input": 2.50,
@@ -45,10 +45,10 @@
       "cache_read": 0.10
     },
     "o3": {
-      "input": 10.00,
-      "output": 40.00,
+      "input": 2.00,
+      "output": 8.00,
       "cache_write": 0.00,
-      "cache_read": 2.50
+      "cache_read": 0.50
     },
     "o4-mini": {
       "input": 1.10,
