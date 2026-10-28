@@ -130,7 +130,7 @@ def heatmap(
         saved = export_svg(values, start, end, metric, output)
         console.print(f"[green]Heatmap saved to {saved}[/green]")
     else:
-        console.print(render_heatmap(values, start, end, metric))
+        console.print(render_heatmap(values, start, end, metric, width=console.width))
 
     if not rows:
         console.print("[dim]No usage in this period yet. cctrack reads supported local usage data.[/dim]")

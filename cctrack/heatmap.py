@@ -11,8 +11,9 @@ from rich.text import Text
 from .stats import cost_for_row
 
 METRICS = ("tokens", "cost", "active-days")
+# 0 is "no activity" — dark enough to recede like GitHub's empty cell.
 _LEVEL_COLORS = ("#161b22", "#0e4429", "#006d32", "#26a641", "#39d353")
-_LEVEL_STYLES = ("#484f58", "#3fb950", "#3fb950", "#56d364", "#7ee787")
+_LEVEL_STYLES = ("#333333", "#2d7a4a", "#2ea043", "#3fb950", "#7ee787")
 
 
 def aggregate_daily(rows: list[dict], metric: str = "tokens") -> dict[date, float]:
@@ -104,6 +105,21 @@ def _month_labels(weeks: list[list[date]], start: date, end: date) -> list[str]:
     return labels
 
 
+def _month_header(
+    weeks: list[list[date]], start: date, end: date, spaced: bool
+) -> str:
+    """Month labels laid out on the same grid as the day cells."""
+    cell = 2 if spaced else 1
+    total = len(weeks) * cell - (1 if spaced else 0)
+    canvas = [" "] * max(total, 0)
+    for column, name in _month_marks(weeks, start, end):
+        x = column * cell
+        for offset, char in enumerate(name):
+            if 0 <= x + offset < len(canvas):
+                canvas[x + offset] = char
+    return "".join(canvas).rstrip()
+
+
 def _metric_total(values: dict[date, float], metric: str) -> str:
     if metric == "tokens":
         return f"{sum(values.values()):,.0f} tokens"
@@ -112,36 +128,63 @@ def _metric_total(values: dict[date, float], metric: str) -> str:
     return f"{sum(value > 0 for value in values.values())} active days"
 
 
+# Terminal cells are about twice as tall as wide. An upper-half block fills the
+# width and half the height, so cells read as squares with an even gap instead
+# of the tall, sparse gaps a full square glyph produces.
+_CELL_GLYPH = "▀"
+_CELL_GLYPH_COMPACT = "▪"
+_MONTH_PREFIX = 3
+
+
 def render_heatmap(
-    values: dict[date, float], start: date, end: date, metric: str = "tokens"
+    values: dict[date, float],
+    start: date,
+    end: date,
+    metric: str = "tokens",
+    width: int | None = None,
 ) -> Text:
-    """Render a compact, accessible-in-terminal activity grid."""
+    """Render a GitHub-style activity grid.
+
+    Cells are spaced out when the terminal is wide enough so each day reads as
+    its own square; empty days use a faint dot instead of a filled block.
+    """
     _, weeks = _calendar(start, end)
     level_by_day = _levels(values)
+    spaced = width is None or _MONTH_PREFIX + len(weeks) * 2 <= width
+    separator = " " if spaced else ""
+    glyph = _CELL_GLYPH if spaced else _CELL_GLYPH_COMPACT
+
     output = Text()
     output.append(f"AI activity · {start:%b %d, %Y} – {end:%b %d, %Y}\n", style="bold")
-    output.append(f"{_metric_total(values, metric)} · relative intensity\n\n", style="dim")
+    active_days = sum(value > 0 for value in values.values())
+    output.append(f"{_metric_total(values, metric)} · {active_days} active days\n\n", style="dim")
 
-    month_labels = _month_labels(weeks, start, end)
-
-    output.append("    ")
-    output.append("".join(month_labels))
+    header = _month_header(weeks, start, end, spaced)
+    output.append(" " * _MONTH_PREFIX)
+    output.append(header)
     output.append("\n")
 
-    for weekday, label in enumerate(("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")):
-        output.append(f"{label}  ", style="dim")
+    for weekday, label in enumerate(("Mo", "", "We", "", "Fr", "", "Su")):
+        output.append(f"{label:<{_MONTH_PREFIX}}", style="dim")
+        cells = []
         for week in weeks:
             day = week[weekday]
             if day < start or day > end:
-                output.append(" ")
+                cells.append((" ", "default"))
                 continue
             level = level_by_day.get(day, 0)
-            output.append("■", style=_LEVEL_STYLES[level])
+            cells.append((glyph, _LEVEL_STYLES[level]))
+        while cells and cells[-1][0] == " ":
+            cells.pop()
+        for index, (cell_glyph, cell_style) in enumerate(cells):
+            output.append(cell_glyph, style=cell_style)
+            if spaced and index < len(cells) - 1:
+                output.append(" ")
         output.append("\n")
 
     output.append("\nLess ", style="dim")
     for level in range(5):
-        output.append("■", style=_LEVEL_STYLES[level])
+        output.append(glyph, style=_LEVEL_STYLES[level])
         output.append(" ")
     output.append("More  ·  ", style="dim")
     output.append(metric, style="bold")
