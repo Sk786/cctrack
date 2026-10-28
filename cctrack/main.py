@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+from pathlib import Path
 
 import typer
 
@@ -9,6 +10,7 @@ from .config import (
 )
 from .storage import sync, query_range, query_all, query_by_project, get_date_bounds, get_db_path, query_today_totals
 from .stats import summarize_rows, daily_breakdown
+from .heatmap import METRICS, aggregate_daily, export_svg, render_heatmap
 from .display import (
     console,
     render_today_table,
@@ -27,7 +29,7 @@ from .display import (
 
 from rich.table import Table
 
-app = typer.Typer(help="Track AI token usage from Claude Code and other CLI agents.")
+app = typer.Typer(help="Track AI usage and visualize your activity.")
 
 
 @app.command()
@@ -104,6 +106,33 @@ def projects(no_chart: bool = typer.Option(False, "--no-chart", help="Skip the p
     console.print(render_projects_table(rows))
     if not no_chart:
         chart_projects_bars(rows)
+    print_sync_note(new)
+
+
+@app.command()
+def heatmap(
+    metric: str = typer.Option("tokens", "--metric", help="Heatmap intensity: tokens, cost, or active-days."),
+    days: int = typer.Option(365, "--days", min=1, max=1825, help="History window (1–1825 days)."),
+    output: Path | None = typer.Option(None, "--output", "-o", help="Export a shareable SVG to this path."),
+):
+    """Show your local AI activity heatmap, or export it as an SVG."""
+    if metric not in METRICS:
+        raise typer.BadParameter(f"choose one of: {', '.join(METRICS)}", param_hint="--metric")
+
+    new = sync()
+    end = date.today()
+    start = end - timedelta(days=days - 1)
+    rows = query_range(start, end)
+    values = aggregate_daily(rows, metric)
+
+    if output:
+        saved = export_svg(values, start, end, metric, output)
+        console.print(f"[green]Heatmap saved to {saved}[/green]")
+    else:
+        console.print(render_heatmap(values, start, end, metric))
+
+    if not rows:
+        console.print("[dim]No usage in this period yet. cctrack reads supported local usage data.[/dim]")
     print_sync_note(new)
 
 
