@@ -51,6 +51,16 @@ Daily granularity only — not real-time.
 ### v3 — Future
 Gemini CLI and other tools as the ecosystem grows.
 
+### v2.5 — OpenCode (implemented)
+OpenCode stores per-message usage in a local SQLite database:
+- Linux: `~/.local/share/opencode/opencode.db`
+- macOS: `~/Library/Application Support/opencode/opencode.db`
+- Windows: `%APPDATA%\opencode\opencode.db`
+
+cctrack opens it read-only and reads assistant messages, which already carry
+input/output/reasoning/cache token counts plus a provider-reported cost. When a
+cost is present it is used as-is; otherwise cctrack estimates from `prices.json`.
+
 ## Commands to Build
 
 ```bash

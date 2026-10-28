@@ -9,6 +9,7 @@ from .config import (
     get_openai_api_key, save_openai_api_key, get_openai_key_path,
 )
 from .storage import sync, query_range, query_all, query_by_project, get_date_bounds, get_db_path, query_today_totals
+from .opencode import get_db_path as get_opencode_db_path
 from .stats import summarize_rows, daily_breakdown
 from .heatmap import METRICS, aggregate_daily, export_svg, render_heatmap
 from .display import (
@@ -177,6 +178,7 @@ def setup():
         prices_path=str(get_bundled_prices_path()),
         user_prices_path=str(get_user_prices_path()),
         openai_key_path=str(get_openai_key_path()),
+        opencode_db_path=str(get_opencode_db_path() or "not found"),
     )
 
 

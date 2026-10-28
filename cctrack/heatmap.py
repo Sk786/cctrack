@@ -8,7 +8,7 @@ from pathlib import Path
 
 from rich.text import Text
 
-from .config import get_pricing
+from .stats import cost_for_row
 
 METRICS = ("tokens", "cost", "active-days")
 _LEVEL_COLORS = ("#161b22", "#0e4429", "#006d32", "#26a641", "#39d353")
@@ -21,26 +21,22 @@ def aggregate_daily(rows: list[dict], metric: str = "tokens") -> dict[date, floa
         raise ValueError(f"metric must be one of: {', '.join(METRICS)}")
 
     values: dict[date, float] = {}
-    prices_by_model: dict[str, dict[str, float]] = {}
     for row in rows:
         day = date.fromisoformat(row["timestamp"][:10])
         tokens = sum(
             row.get(key, 0)
-            for key in ("input_tokens", "output_tokens", "cache_write_tokens", "cache_read_tokens")
+            for key in (
+                "input_tokens",
+                "output_tokens",
+                "cache_write_tokens",
+                "cache_read_tokens",
+                "reasoning_tokens",
+            )
         )
         if metric == "tokens":
             amount = tokens
         elif metric == "cost":
-            model = row["model"]
-            if model not in prices_by_model:
-                prices_by_model[model], _ = get_pricing(model)
-            prices = prices_by_model[model]
-            amount = (
-                row.get("input_tokens", 0) * prices["input"]
-                + row.get("output_tokens", 0) * prices["output"]
-                + row.get("cache_write_tokens", 0) * prices["cache_write"]
-                + row.get("cache_read_tokens", 0) * prices["cache_read"]
-            ) / 1_000_000
+            amount = cost_for_row(row)
         else:
             amount = 1 if tokens > 0 else 0
         if metric == "active-days":
