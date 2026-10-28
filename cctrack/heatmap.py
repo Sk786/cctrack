@@ -77,6 +77,37 @@ def _calendar(start: date, end: date) -> tuple[date, list[list[date]]]:
     return first_monday, weeks
 
 
+def _month_marks(weeks: list[list[date]], start: date, end: date) -> list[tuple[int, str]]:
+    """Return (column, label) pairs, skipping labels that would collide."""
+    marks: list[tuple[int, str]] = []
+    last_end = -2
+    covered: tuple[int, int] | None = None
+    for column, week in enumerate(weeks):
+        visible_day = next((day for day in week if start <= day <= end), None)
+        if not visible_day:
+            continue
+        key = (visible_day.year, visible_day.month)
+        if key == covered:
+            continue
+        covered = key
+        name = visible_day.strftime("%b")
+        if column < last_end + 2:
+            continue  # not enough room next to the previous label
+        marks.append((column, name))
+        last_end = column + len(name) - 1
+    return marks
+
+
+def _month_labels(weeks: list[list[date]], start: date, end: date) -> list[str]:
+    """Place 3-letter month labels without letting them collide."""
+    labels = [" "] * len(weeks)
+    for column, name in _month_marks(weeks, start, end):
+        for offset, char in enumerate(name):
+            if column + offset < len(labels):
+                labels[column + offset] = char
+    return labels
+
+
 def _metric_total(values: dict[date, float], metric: str) -> str:
     if metric == "tokens":
         return f"{sum(values.values()):,.0f} tokens"
@@ -95,15 +126,7 @@ def render_heatmap(
     output.append(f"AI activity · {start:%b %d, %Y} – {end:%b %d, %Y}\n", style="bold")
     output.append(f"{_metric_total(values, metric)} · relative intensity\n\n", style="dim")
 
-    month_labels = [" "] * len(weeks)
-    previous_month: tuple[int, int] | None = None
-    for column, week in enumerate(weeks):
-        visible_day = next((day for day in week if start <= day <= end), None)
-        if visible_day and (visible_day.year, visible_day.month) != previous_month:
-            for offset, char in enumerate(visible_day.strftime("%b")):
-                if column + offset < len(month_labels):
-                    month_labels[column + offset] = char
-            previous_month = (visible_day.year, visible_day.month)
+    month_labels = _month_labels(weeks, start, end)
 
     output.append("    ")
     output.append("".join(month_labels))
@@ -142,15 +165,10 @@ def export_svg(
     top = 42
     width = left + len(weeks) * step + 8
     height = top + 7 * step + 54
-    months: list[str] = []
-    prev_month = None
-    for column, week in enumerate(weeks):
-        month_day = next((day for day in week if start <= day <= end), None)
-        if month_day and (month_day.year, month_day.month) != prev_month:
-            months.append(
-                f'<text x="{left + column * step}" y="{top - 12}" class="month">{month_day:%b}</text>'
-            )
-            prev_month = (month_day.year, month_day.month)
+    months: list[str] = [
+        f'<text x="{left + column * step}" y="{top - 12}" class="month">{name}</text>'
+        for column, name in _month_marks(weeks, start, end)
+    ]
 
     cells: list[str] = []
     for column, week in enumerate(weeks):

@@ -45,6 +45,19 @@ def test_render_heatmap_shows_period_total_and_legend():
     assert "Mo" in output.plain and "Su" in output.plain
 
 
+def test_month_labels_do_not_collide():
+    from cctrack.heatmap import _month_marks, _calendar
+
+    start = date(2025, 10, 29)
+    end = date(2026, 10, 28)
+    _, weeks = _calendar(start, end)
+    marks = _month_marks(weeks, start, end)
+
+    assert [name for _, name in marks][:3] == ["Oct", "Dec", "Jan"]
+    for (column, name), (next_column, _) in zip(marks, marks[1:]):
+        assert next_column >= column + len(name) + 1
+
+
 def test_export_svg_is_standalone_and_accessible(tmp_path):
     start = date(2026, 10, 1)
     path = export_svg(
@@ -58,3 +71,4 @@ def test_export_svg_is_standalone_and_accessible(tmp_path):
     assert root.find(".//{http://www.w3.org/2000/svg}rect/{http://www.w3.org/2000/svg}title") is not None
     assert "Selected metric: tokens" in content
     assert "250" not in content
+    assert ">Oct</text>" in content or ">Sep</text>" in content
