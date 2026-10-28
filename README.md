@@ -1,8 +1,10 @@
 # cctrack
 
-Track and analyze your AI token usage from Claude Code and other CLI agents — directly in the terminal.
+Know your AI activity. Keep it local. Share a heatmap.
 
-No API key needed. Reads local session files, stores in SQLite, shows cost breakdowns with charts.
+`cctrack` tracks AI usage from Claude Code and OpenAI, then turns it into useful terminal reports and a GitHub-style activity heatmap. Claude Code tracking reads local session files—no account or API key required. Export a heatmap as SVG for your profile or README.
+
+**Local-first:** your session history stays on your machine. No account or upload is required to use the CLI.
 
 ```
 $ cctrack today
@@ -26,12 +28,24 @@ pip install cctrack-ai
 Or from source:
 
 ```bash
-git clone https://github.com/yourusername/cctrack
+git clone https://github.com/Sk786/cctrack.git
 cd cctrack
 pip install -e .
 ```
 
 ## Commands
+
+### `cctrack heatmap`
+See your AI activity across the last year, directly in the terminal. The default intensity is total tokens; choose estimated spend or active days instead.
+
+```bash
+cctrack heatmap
+cctrack heatmap --metric cost --days 90
+cctrack heatmap --metric active-days
+cctrack heatmap --output ~/ai-activity.svg
+```
+
+The exported SVG contains dates and relative activity levels only—never prompts or project names. It is generated locally and is not uploaded anywhere. Heatmap intensity is a picture of usage, not a productivity score.
 
 ### `cctrack today`
 Token usage and cost for the current day, broken down by model. Includes a stacked token-type chart.
@@ -155,8 +169,8 @@ $ cctrack prices
 ┃ Model              ┃  Input ┃ Output ┃ Cache Write ┃ Cache Read ┃
 ┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
 │ claude-sonnet-4-6  │  $3.00 │ $15.00 │       $3.75 │      $0.30 │
-│ claude-opus-4-8    │ $15.00 │ $75.00 │      $18.75 │      $1.50 │
-│ claude-haiku-4-5   │  $0.80 │  $4.00 │       $1.00 │      $0.08 │
+│ claude-opus-4-8    │  $5.00 │ $25.00 │       $6.25 │      $0.50 │
+│ claude-haiku-4-5   │  $1.00 │  $5.00 │       $1.25 │      $0.10 │
 │ default (fallback) │  $3.00 │ $15.00 │       $3.75 │      $0.30 │
 └────────────────────┴────────┴────────┴─────────────┴────────────┘
 
@@ -208,7 +222,7 @@ cctrack-prompt --format cost    # [CC $5.43]
 2. `cctrack` parses these files and stores token counts in `~/.config/cctrack/usage.db`
 3. All commands query SQLite — fast and offline
 
-No API key needed. Everything is local.
+Claude Code tracking and local reports work offline. OpenAI usage can be imported on demand with `cctrack openai-sync` and requires an OpenAI organization API key. The CLI does not upload local transcripts.
 
 ## Customizing Prices
 
@@ -235,9 +249,11 @@ All cost values are color coded consistently across every command:
 
 ## Roadmap
 
-- **v0.2** — Codex / OpenAI support via the Usage API
-- **v0.3** — Gemini CLI support
-- **v0.4** — Budget alerts and weekly digest
+- **Available** — Claude Code tracking, OpenAI Usage API import, reports, and local activity heatmap/SVG export
+- **Exploring** — Opt-in shareable profiles and private team boards
+- **Future** — More local AI usage sources based on demand
+
+Product site: [cctrack.sandeepk.dev](https://cctrack.sandeepk.dev/)
 
 ## License
 

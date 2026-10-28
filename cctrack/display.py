@@ -409,6 +409,7 @@ def render_setup_guide(projects_dir: str, db_path: str, prices_path: str, user_p
     cmds = [
         ("cctrack today",        "Token usage for today"),
         ("cctrack weekly",       "Last 7 days breakdown + bar chart"),
+        ("cctrack heatmap",      "AI activity calendar + shareable SVG export"),
         ("cctrack stats",        "All-time summary by model"),
         ("cctrack projects",     "Usage broken down by project"),
         ("cctrack prices",       "Show model pricing"),
