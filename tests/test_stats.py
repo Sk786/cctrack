@@ -2,6 +2,34 @@ from cctrack.stats import calc_cost, summarize_rows, daily_breakdown
 from datetime import date, timedelta
 
 
+def test_calc_cost_prefers_reported_cost():
+    # OpenCode records the cost it was actually billed; that wins over the table.
+    assert calc_cost("unknown-model", 1_000_000, 0, 0, 0, reported_cost=0.0) == 0.0
+    assert calc_cost("claude-sonnet-4-6", 1_000_000, 0, 0, 0, reported_cost=0.42) == 0.42
+
+
+def test_calc_cost_bills_reasoning_at_output_rate():
+    # 1M reasoning tokens on Sonnet's $15/M output rate
+    assert abs(calc_cost("claude-sonnet-4-6", 0, 0, 0, 0, reasoning_tokens=1_000_000) - 15.0) < 0.0001
+
+
+def test_summarize_rows_uses_reported_cost_and_counts_reasoning():
+    rows = [
+        {
+            "model": "deepseek-v4.1-flash-free",
+            "input_tokens": 100,
+            "output_tokens": 20,
+            "cache_write_tokens": 0,
+            "cache_read_tokens": 50,
+            "reasoning_tokens": 5,
+            "reported_cost": 0.0,
+        }
+    ]
+    result = summarize_rows(rows)["deepseek-v4.1-flash-free"]
+    assert result.cost == 0.0
+    assert result.total_tokens == 175
+
+
 def test_calc_cost_zero():
     assert calc_cost("claude-sonnet-4-6", 0, 0, 0, 0) == 0.0
 

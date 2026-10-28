@@ -2,7 +2,7 @@
 
 Know your AI activity. Keep it local. Share a heatmap.
 
-`cctrack` tracks AI usage from Claude Code and OpenAI, then turns it into useful terminal reports and a GitHub-style activity heatmap. Claude Code tracking reads local session files—no account or API key required. Export a heatmap as SVG for your profile or README.
+`cctrack` tracks AI usage from Claude Code, OpenCode, and OpenAI, then turns it into useful terminal reports and a GitHub-style activity heatmap. Local sources need no account or API key. Export a heatmap as SVG for your profile or README.
 
 **Local-first:** your session history stays on your machine. No account or upload is required to use the CLI.
 
@@ -218,11 +218,19 @@ cctrack-prompt --format cost    # [CC $5.43]
 
 ## How It Works
 
-1. Claude Code stores full session transcripts at `~/.claude/projects/**/*.jsonl`
-2. `cctrack` parses these files and stores token counts in `~/.config/cctrack/usage.db`
-3. All commands query SQLite — fast and offline
+cctrack reads usage that the tools already keep on your machine:
 
-Claude Code tracking and local reports work offline. OpenAI usage can be imported on demand with `cctrack openai-sync` and requires an OpenAI organization API key. The CLI does not upload local transcripts.
+| Source | Location | Notes |
+| --- | --- | --- |
+| Claude Code | `~/.claude/projects/**/*.jsonl` | Parsed from session transcripts |
+| OpenCode | `~/.local/share/opencode/opencode.db` | Read-only; includes reasoning tokens and provider-reported cost |
+| OpenAI | Usage API | Opt-in via `cctrack openai-sync`, needs an organization API key |
+
+Everything is stored in `~/.config/cctrack/usage.db`, and every command queries that file — fast and offline.
+
+**Cost resolution:** when OpenCode reports what a request actually cost, cctrack uses that number. Otherwise it estimates from the bundled price table. Reasoning tokens are billed at the output rate.
+
+The CLI never uploads local transcripts or project names.
 
 ## Customizing Prices
 
@@ -249,7 +257,7 @@ All cost values are color coded consistently across every command:
 
 ## Roadmap
 
-- **Available** — Claude Code tracking, OpenAI Usage API import, reports, and local activity heatmap/SVG export
+- **Available** — Claude Code and OpenCode tracking, OpenAI Usage API import, reports, and local activity heatmap/SVG export
 - **Exploring** — Opt-in shareable profiles and private team boards
 - **Future** — More local AI usage sources based on demand
 

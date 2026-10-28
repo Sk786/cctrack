@@ -17,6 +17,8 @@ class TokenEntry:
     cache_write_tokens: int
     cache_read_tokens: int
     provider: str = "claude"
+    reasoning_tokens: int = 0
+    reported_cost: float | None = None  # provider-calculated cost, when available
 
 
 def _parse_project_name(jsonl_path: Path) -> str:

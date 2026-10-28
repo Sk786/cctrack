@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cctrack-ai"
-version = "0.3.1"
+version = "0.4.0"
 description = "Track and analyze AI token usage from Claude Code and other CLI agents"
 readme = "README.md"
 license = { text = "MIT" }

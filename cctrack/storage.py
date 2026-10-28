@@ -36,13 +36,27 @@ def init_db():
                 cache_write_tokens INTEGER NOT NULL DEFAULT 0,
                 cache_read_tokens INTEGER NOT NULL DEFAULT 0,
                 provider TEXT NOT NULL DEFAULT 'claude',
+                reasoning_tokens INTEGER NOT NULL DEFAULT 0,
+                reported_cost REAL,
                 PRIMARY KEY (session_id, timestamp)
             )
         """)
-        # migrate existing DBs that lack the provider column
+        # migrate existing DBs that predate newer columns
         cols = {row[1] for row in conn.execute("PRAGMA table_info(usage)").fetchall()}
         if "provider" not in cols:
             conn.execute("ALTER TABLE usage ADD COLUMN provider TEXT NOT NULL DEFAULT 'claude'")
+        if "reasoning_tokens" not in cols:
+            conn.execute("ALTER TABLE usage ADD COLUMN reasoning_tokens INTEGER NOT NULL DEFAULT 0")
+        if "reported_cost" not in cols:
+            conn.execute("ALTER TABLE usage ADD COLUMN reported_cost REAL")
+        # drop rows recorded without any usage (aborted turns from older syncs)
+        conn.execute(
+            """
+            DELETE FROM usage
+            WHERE input_tokens + output_tokens + cache_write_tokens
+                + cache_read_tokens + reasoning_tokens = 0
+            """
+        )
 
 
 def upsert_entries(entries: list[TokenEntry]) -> int:
@@ -54,8 +68,9 @@ def upsert_entries(entries: list[TokenEntry]) -> int:
             """
             INSERT OR IGNORE INTO usage
                 (session_id, timestamp, model, project,
-                 input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, provider)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 input_tokens, output_tokens, cache_write_tokens, cache_read_tokens,
+                 provider, reasoning_tokens, reported_cost)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 (
@@ -68,6 +83,8 @@ def upsert_entries(entries: list[TokenEntry]) -> int:
                     e.cache_write_tokens,
                     e.cache_read_tokens,
                     e.provider,
+                    e.reasoning_tokens,
+                    e.reported_cost,
                 )
                 for e in entries
             ],
@@ -76,9 +93,15 @@ def upsert_entries(entries: list[TokenEntry]) -> int:
 
 
 def sync() -> int:
-    """Parse all JSONL files and upsert into SQLite. Returns count of new rows."""
+    """Parse local Claude Code and OpenCode usage and upsert into SQLite.
+
+    Returns the count of new rows added.
+    """
+    from .opencode import parse_db
+
     init_db()
     entries = parse_all()
+    entries.extend(parse_db())
     return upsert_entries(entries)
 
 
@@ -114,6 +137,9 @@ def query_by_project() -> list[dict]:
                 SUM(output_tokens)      AS output_tokens,
                 SUM(cache_write_tokens) AS cache_write_tokens,
                 SUM(cache_read_tokens)  AS cache_read_tokens,
+                SUM(reasoning_tokens)   AS reasoning_tokens,
+                SUM(reported_cost)      AS reported_cost,
+                SUM(CASE WHEN reported_cost IS NULL THEN 1 ELSE 0 END) AS unpriced_rows,
                 MIN(timestamp)          AS first_seen,
                 MAX(timestamp)          AS last_seen,
                 COUNT(*)                AS entry_count
@@ -138,7 +164,8 @@ def query_today_totals() -> tuple[int, float] | None:
 
     with _connect() as conn:
         rows = conn.execute(
-            "SELECT model, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens "
+            "SELECT model, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, "
+            "reasoning_tokens, reported_cost "
             "FROM usage WHERE date(timestamp) = date('now', 'localtime')"
         ).fetchall()
 
@@ -148,8 +175,11 @@ def query_today_totals() -> tuple[int, float] | None:
     total_tokens = 0
     total_cost = 0.0
     for row in rows:
-        total_tokens += row[1] + row[2] + row[3] + row[4]
-        total_cost += calc_cost(row[0], row[1], row[2], row[3], row[4])
+        total_tokens += row[1] + row[2] + row[3] + row[4] + row[5]
+        total_cost += calc_cost(
+            row[0], row[1], row[2], row[3], row[4],
+            reasoning_tokens=row[5], reported_cost=row[6],
+        )
 
     return total_tokens, total_cost
 

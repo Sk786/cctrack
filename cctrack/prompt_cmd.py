@@ -28,7 +28,10 @@ def _load_prices() -> dict:
         return json.load(f)
 
 
-def _calc_cost(model: str, inp: int, out: int, cw: int, cr: int, prices: dict) -> float:
+def _calc_cost(model: str, inp: int, out: int, cw: int, cr: int, prices: dict,
+               reasoning: int = 0, reported_cost: float | None = None) -> float:
+    if reported_cost is not None:
+        return reported_cost
     models = prices.get("models", {})
     p = prices["default"]
     for key in models:
@@ -38,7 +41,7 @@ def _calc_cost(model: str, inp: int, out: int, cw: int, cr: int, prices: dict) -
     per_m = 1_000_000
     return (
         inp * p["input"] / per_m
-        + out * p["output"] / per_m
+        + (out + reasoning) * p["output"] / per_m
         + cw * p["cache_write"] / per_m
         + cr * p["cache_read"] / per_m
     )
@@ -57,7 +60,8 @@ def main():
     try:
         conn = sqlite3.connect(db)
         rows = conn.execute(
-            "SELECT model, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens "
+            "SELECT model, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, "
+            "reasoning_tokens, reported_cost "
             "FROM usage WHERE date(timestamp) = date('now', 'localtime')"
         ).fetchall()
         conn.close()
@@ -74,9 +78,12 @@ def main():
 
     total_tokens = 0
     total_cost = 0.0
-    for model, inp, out, cw, cr in rows:
-        total_tokens += inp + out + cw + cr
-        total_cost += _calc_cost(model, inp, out, cw, cr, prices)
+    for model, inp, out, cw, cr, reasoning, reported_cost in rows:
+        total_tokens += inp + out + cw + cr + (reasoning or 0)
+        total_cost += _calc_cost(
+            model, inp, out, cw, cr, prices,
+            reasoning=reasoning or 0, reported_cost=reported_cost,
+        )
 
     if fmt == "tokens":
         out_str = f"[CC {_fmt(total_tokens)}]"

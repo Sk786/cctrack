@@ -60,7 +60,7 @@ def chart_model_bars(days: list[DaySummary]):
         return
 
     sorted_models = sorted(combined.items(), key=lambda x: x[1])
-    names = [m.replace("claude-", "") for m, _ in sorted_models]
+    names = [short_model(m) for m, _ in sorted_models]
     costs = [round(c, 4) for _, c in sorted_models]
     colors = [_plt_color(c) for c in costs]
 
@@ -75,16 +75,12 @@ def chart_model_bars(days: list[DaySummary]):
 
 def chart_projects_bars(rows: list[dict]):
     """Horizontal bar chart of cost per project, top 10."""
-    from .stats import calc_cost
+    from .stats import cost_for_row
 
     projects: dict[str, float] = {}
     for row in rows:
         p = row["project"]
-        projects[p] = projects.get(p, 0.0) + calc_cost(
-            row["model"],
-            row["input_tokens"], row["output_tokens"],
-            row["cache_write_tokens"], row["cache_read_tokens"],
-        )
+        projects[p] = projects.get(p, 0.0) + cost_for_row(row)
 
     top = sorted(projects.items(), key=lambda x: x[1])[-10:]
     names = [p.split("/")[-1] or p for p, _ in top]
@@ -106,7 +102,7 @@ def chart_today_tokens(stats: dict[str, ModelStats]):
         return
 
     models = sorted(stats.keys())
-    short = [m.replace("claude-", "") for m in models]
+    short = [short_model(m) for m in models]
 
     inputs = [stats[m].input_tokens for m in models]
     outputs = [stats[m].output_tokens for m in models]
@@ -129,6 +125,21 @@ def chart_today_tokens(stats: dict[str, ModelStats]):
 _BAR_WIDTH = 28
 _BAR_CHAR = "█"
 _EMPTY_CHAR = "░"
+
+
+def short_model(name: str) -> str:
+    """Drop date-stamped snapshot suffixes so tables stay readable."""
+    if len(name) > 9 and name[-9] == "-" and name[-8:].isdigit():
+        return name[:-9]
+    return name
+
+
+def summarize_models(models: set[str], limit: int = 3) -> str:
+    """Short, deduplicated model list for narrow table cells."""
+    names = sorted({short_model(m) for m in models})
+    if len(names) > limit:
+        return ", ".join(names[:limit]) + f" +{len(names) - limit}"
+    return ", ".join(names)
 
 
 def fmt_tokens(n: int) -> str:
@@ -172,8 +183,9 @@ def render_today_table(stats: dict[str, ModelStats], day: date) -> Table:
         title=f"Today's Usage — {day.strftime('%A, %B %d %Y')}",
         box=box.ROUNDED,
         show_footer=True,
+        padding=(0, 0),
     )
-    table.add_column("Model", footer="[bold]TOTAL[/bold]")
+    table.add_column("Model", footer="[bold]TOTAL[/bold]", no_wrap=True, min_width=20)
     table.add_column("Input", justify="right", footer="")
     table.add_column("Output", justify="right", footer="")
     table.add_column("Cache Write", justify="right", footer="")
@@ -187,7 +199,7 @@ def render_today_table(stats: dict[str, ModelStats], day: date) -> Table:
     for model, s in sorted(stats.items()):
         style = cost_style(s.cost)
         table.add_row(
-            model,
+            short_model(model),
             fmt_tokens(s.input_tokens),
             fmt_tokens(s.output_tokens),
             fmt_tokens(s.cache_write_tokens),
@@ -259,6 +271,7 @@ def render_model_breakdown(days: list[DaySummary]) -> Panel:
             c.output_tokens += s.output_tokens
             c.cache_write_tokens += s.cache_write_tokens
             c.cache_read_tokens += s.cache_read_tokens
+            c.reasoning_tokens += s.reasoning_tokens
             c.cost += s.cost
 
     if not combined:
@@ -267,7 +280,7 @@ def render_model_breakdown(days: list[DaySummary]) -> Panel:
     lines = Text()
     for model, s in sorted(combined.items(), key=lambda x: x[1].cost, reverse=True):
         style = cost_style(s.cost)
-        lines.append(f"  {model}\n", style="bold")
+        lines.append(f"  {short_model(model)}\n", style="bold")
         lines.append(f"    tokens : {fmt_tokens(s.total_tokens)}\n", style="dim")
         lines.append(f"    cost   : ", style="dim")
         lines.append(f"{fmt_cost(s.cost)}\n", style=style)
@@ -287,6 +300,7 @@ def render_stats_table(days: list[DaySummary], earliest: str | None, latest: str
             c.output_tokens += s.output_tokens
             c.cache_write_tokens += s.cache_write_tokens
             c.cache_read_tokens += s.cache_read_tokens
+            c.reasoning_tokens += s.reasoning_tokens
             c.cost += s.cost
 
     span = f"{earliest} → {latest}" if earliest and latest else "no data"
@@ -294,8 +308,9 @@ def render_stats_table(days: list[DaySummary], earliest: str | None, latest: str
         title=f"All-Time Usage  [{span}]",
         box=box.ROUNDED,
         show_footer=True,
+        padding=(0, 0),
     )
-    table.add_column("Model", footer="[bold]TOTAL[/bold]")
+    table.add_column("Model", footer="[bold]TOTAL[/bold]", no_wrap=True, min_width=20)
     table.add_column("Input", justify="right", footer="")
     table.add_column("Output", justify="right", footer="")
     table.add_column("Cache Write", justify="right", footer="")
@@ -309,7 +324,7 @@ def render_stats_table(days: list[DaySummary], earliest: str | None, latest: str
     for model, s in sorted(combined.items(), key=lambda x: x[1].cost, reverse=True):
         style = cost_style(s.cost)
         table.add_row(
-            model,
+            short_model(model),
             fmt_tokens(s.input_tokens),
             fmt_tokens(s.output_tokens),
             fmt_tokens(s.cache_write_tokens),
@@ -324,7 +339,7 @@ def render_stats_table(days: list[DaySummary], earliest: str | None, latest: str
 
 
 def render_projects_table(rows: list[dict]) -> Table:
-    from .stats import calc_cost
+    from .stats import cost_for_row
 
     # aggregate per project across models
     projects: dict[str, dict] = {}
@@ -332,7 +347,7 @@ def render_projects_table(rows: list[dict]) -> Table:
         p = row["project"]
         if p not in projects:
             projects[p] = {
-                "input": 0, "output": 0, "cache_write": 0, "cache_read": 0,
+                "input": 0, "output": 0, "cache_write": 0, "cache_read": 0, "reasoning": 0,
                 "cost": 0.0, "first_seen": row["first_seen"], "last_seen": row["last_seen"],
                 "models": set(),
             }
@@ -341,11 +356,8 @@ def render_projects_table(rows: list[dict]) -> Table:
         d["output"] += row["output_tokens"]
         d["cache_write"] += row["cache_write_tokens"]
         d["cache_read"] += row["cache_read_tokens"]
-        d["cost"] += calc_cost(
-            row["model"],
-            row["input_tokens"], row["output_tokens"],
-            row["cache_write_tokens"], row["cache_read_tokens"],
-        )
+        d["reasoning"] += row.get("reasoning_tokens", 0)
+        d["cost"] += cost_for_row(row)
         d["models"].add(row["model"])
         if row["first_seen"] < d["first_seen"]:
             d["first_seen"] = row["first_seen"]
@@ -363,16 +375,14 @@ def render_projects_table(rows: list[dict]) -> Table:
 
     grand_cost = sum(d["cost"] for d in projects.values())
     grand_tokens = sum(
-        d["input"] + d["output"] + d["cache_write"] + d["cache_read"]
+        d["input"] + d["output"] + d["cache_write"] + d["cache_read"] + d["reasoning"]
         for d in projects.values()
     )
 
     for project, d in sorted_projects:
-        total = d["input"] + d["output"] + d["cache_write"] + d["cache_read"]
+        total = d["input"] + d["output"] + d["cache_write"] + d["cache_read"] + d["reasoning"]
         style = cost_style(d["cost"])
-        model_names = ", ".join(
-            m.split("-")[1] if "-" in m else m for m in sorted(d["models"])
-        )
+        model_names = summarize_models(d["models"], limit=2)
         table.add_row(
             project[:50],
             fmt_tokens(total),
@@ -386,7 +396,7 @@ def render_projects_table(rows: list[dict]) -> Table:
     return table
 
 
-def render_setup_guide(projects_dir: str, db_path: str, prices_path: str, user_prices_path: str, openai_key_path: str = ""):
+def render_setup_guide(projects_dir: str, db_path: str, prices_path: str, user_prices_path: str, openai_key_path: str = "", opencode_db_path: str = ""):
     from rich.padding import Padding
 
     console.print()
@@ -398,6 +408,8 @@ def render_setup_guide(projects_dir: str, db_path: str, prices_path: str, user_p
 
     console.print("[bold]Data Sources[/bold]")
     console.print(f"  Claude Code sessions : [cyan]{projects_dir}[/cyan]")
+    if opencode_db_path:
+        console.print(f"  OpenCode database    : [cyan]{opencode_db_path}[/cyan]")
     console.print(f"  SQLite database      : [cyan]{db_path}[/cyan]")
     console.print(f"  Bundled prices       : [cyan]{prices_path}[/cyan]")
     console.print(f"  Custom prices (opt.) : [cyan]{user_prices_path}[/cyan]")
