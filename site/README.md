@@ -21,5 +21,10 @@ Remove any conflicting record for the `cctrack` host. Once DNS resolves and Page
 shows the custom domain as verified, enable **Enforce HTTPS** in Settings → Pages.
 DNS propagation and certificate issuance can take some time.
 
-The current preview is deliberately honest about product status: local CLI heatmaps
-are available in this branch; hosted profiles and team boards are not live yet.
+## Deployment status
+
+Live at <https://cctrack.sandeepk.dev> from `master` via GitHub Actions. GitHub Pages for
+this repository requires the repo to be public; it was made public for that reason.
+
+Custom domain and HTTPS are configured in **Settings → Pages**. DNS is managed at
+Squarespace Domains and points `cctrack` at `sk786.github.io`.
