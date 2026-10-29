@@ -58,6 +58,35 @@ def test_month_labels_do_not_collide():
         assert next_column >= column + len(name) + 1
 
 
+def test_render_heatmap_is_rectangular():
+    start = date(2025, 10, 29)
+    end = date(2026, 10, 28)
+    output = render_heatmap({start: 100}, start, end, "tokens", width=112, color_system="256")
+    rows = [line for line in output.plain.splitlines() if "▀" in line]
+    grid_rows = rows[:7]
+
+    assert len(grid_rows) == 7
+    assert len({len(line) for line in grid_rows}) == 1
+
+
+def test_low_color_terminals_use_dots_for_empty_days():
+    start = date(2026, 10, 1)
+    end = date(2026, 10, 7)
+
+    low = render_heatmap({start: 100}, start, end, "tokens", width=112, color_system="standard")
+    rich_color = render_heatmap({start: 100}, start, end, "tokens", width=112, color_system="256")
+
+    def grid_dots(text):
+        rows = [
+            line for line in text.plain.splitlines()
+            if "▀" in line and not line.startswith("Less")
+        ]
+        return sum(row.count("·") for row in rows)
+
+    assert grid_dots(low) > 0
+    assert grid_dots(rich_color) == 0
+
+
 def test_export_svg_is_standalone_and_accessible(tmp_path):
     start = date(2026, 10, 1)
     path = export_svg(
