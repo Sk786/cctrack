@@ -13,7 +13,21 @@ from .stats import cost_for_row
 METRICS = ("tokens", "cost", "active-days")
 # 0 is "no activity" — dark enough to recede like GitHub's empty cell.
 _LEVEL_COLORS = ("#161b22", "#0e4429", "#006d32", "#26a641", "#39d353")
-_LEVEL_STYLES = ("#333333", "#2d7a4a", "#2ea043", "#3fb950", "#7ee787")
+# Truecolor/256 ramps. Dark greys can quantize to the terminal background on
+# 16-colour terminals, so those get a named ANSI ramp instead.
+_LEVEL_STYLES = ("#3a3a3a", "#2d7a4a", "#2ea043", "#3fb950", "#7ee787")
+_LEVEL_STYLES_ANSI = ("grey30", "green", "green", "bright_green", "bright_green")
+
+
+def _level_styles(color_system: str | None) -> tuple[tuple[str, ...], bool]:
+    """Return (ramp, low_color) for this terminal's colour depth.
+
+    On 16-colour terminals dark greys quantize to the background, so the ramp
+    falls back to named ANSI colours and empty days switch to a dot glyph.
+    """
+    if color_system in (None, "standard"):
+        return _LEVEL_STYLES_ANSI, True
+    return _LEVEL_STYLES, False
 
 
 def aggregate_daily(rows: list[dict], metric: str = "tokens") -> dict[date, float]:
@@ -142,17 +156,21 @@ def render_heatmap(
     end: date,
     metric: str = "tokens",
     width: int | None = None,
+    color_system: str | None = "truecolor",
 ) -> Text:
     """Render a GitHub-style activity grid.
 
     Cells are spaced out when the terminal is wide enough so each day reads as
-    its own square; empty days use a faint dot instead of a filled block.
+    its own square. At low colour depths the ramp falls back to named ANSI
+    colours and empty days use a dot, so no cell can match the background.
     """
     _, weeks = _calendar(start, end)
     level_by_day = _levels(values)
+    styles, low_color = _level_styles(color_system)
     spaced = width is None or _MONTH_PREFIX + len(weeks) * 2 <= width
     separator = " " if spaced else ""
     glyph = _CELL_GLYPH if spaced else _CELL_GLYPH_COMPACT
+    empty_glyph = "·" if low_color else glyph
 
     output = Text()
     output.append(f"AI activity · {start:%b %d, %Y} – {end:%b %d, %Y}\n", style="bold")
@@ -170,12 +188,10 @@ def render_heatmap(
         for week in weeks:
             day = week[weekday]
             if day < start or day > end:
-                cells.append((" ", "default"))
+                cells.append((empty_glyph, styles[0]))
                 continue
             level = level_by_day.get(day, 0)
-            cells.append((glyph, _LEVEL_STYLES[level]))
-        while cells and cells[-1][0] == " ":
-            cells.pop()
+            cells.append((empty_glyph if level == 0 else glyph, styles[level]))
         for index, (cell_glyph, cell_style) in enumerate(cells):
             output.append(cell_glyph, style=cell_style)
             if spaced and index < len(cells) - 1:
@@ -184,7 +200,7 @@ def render_heatmap(
 
     output.append("\nLess ", style="dim")
     for level in range(5):
-        output.append(glyph, style=_LEVEL_STYLES[level])
+        output.append(empty_glyph if level == 0 else glyph, style=styles[level])
         output.append(" ")
     output.append("More  ·  ", style="dim")
     output.append(metric, style="bold")
