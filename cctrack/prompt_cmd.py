@@ -33,15 +33,12 @@ def _calc_cost(model: str, inp: int, out: int, cw: int, cr: int, prices: dict,
     if reported_cost is not None:
         return reported_cost
     models = prices.get("models", {})
-    p = prices["default"]
-    for key in models:
-        if model.startswith(key):
-            p = models[key]
-            break
+    matches = [key for key in models if model.startswith(key)]
+    p = models[max(matches, key=len)] if matches else prices["default"]
     per_m = 1_000_000
     return (
         inp * p["input"] / per_m
-        + (out + reasoning) * p["output"] / per_m
+        + out * p["output"] / per_m
         + cw * p["cache_write"] / per_m
         + cr * p["cache_read"] / per_m
     )
@@ -79,7 +76,7 @@ def main():
     total_tokens = 0
     total_cost = 0.0
     for model, inp, out, cw, cr, reasoning, reported_cost in rows:
-        total_tokens += inp + out + cw + cr + (reasoning or 0)
+        total_tokens += inp + out + cw + cr
         total_cost += _calc_cost(
             model, inp, out, cw, cr, prices,
             reasoning=reasoning or 0, reported_cost=reported_cost,

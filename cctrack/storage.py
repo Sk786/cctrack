@@ -1,6 +1,6 @@
 import sqlite3
 from contextlib import contextmanager
-from datetime import date
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from .parser import TokenEntry, parse_all
@@ -57,6 +57,51 @@ def init_db():
                 + cache_read_tokens + reasoning_tokens = 0
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sync_state (
+                source TEXT PRIMARY KEY,
+                last_sync TEXT NOT NULL
+            )
+            """
+        )
+
+
+def reset_db() -> int:
+    """Delete all stored usage rows and sync bookkeeping.
+
+    The database holds only data derived from other tools' local stores, so it
+    can always be rebuilt. Returns the number of rows dropped.
+    """
+    init_db()
+    with _connect() as conn:
+        dropped = conn.execute("SELECT COUNT(*) FROM usage").fetchone()[0]
+        conn.execute("DELETE FROM usage")
+        conn.execute("DELETE FROM sync_state")
+    return dropped
+
+
+def get_sync_state(source: str) -> datetime | None:
+    """Return when a source last synced successfully, if ever."""
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT last_sync FROM sync_state WHERE source = ?", (source,)
+        ).fetchone()
+    if not row:
+        return None
+    try:
+        return datetime.fromisoformat(row[0])
+    except ValueError:
+        return None
+
+
+def set_sync_state(source: str, when: datetime) -> None:
+    with _connect() as conn:
+        conn.execute(
+            "INSERT INTO sync_state (source, last_sync) VALUES (?, ?) "
+            "ON CONFLICT(source) DO UPDATE SET last_sync = excluded.last_sync",
+            (source, when.isoformat()),
+        )
 
 
 def upsert_entries(entries: list[TokenEntry]) -> int:
@@ -93,16 +138,33 @@ def upsert_entries(entries: list[TokenEntry]) -> int:
 
 
 def sync() -> int:
-    """Parse local Claude Code and OpenCode usage and upsert into SQLite.
+    """Parse local Claude Code, OpenCode, and Codex usage into SQLite.
 
     Returns the count of new rows added.
     """
+    from .codex import parse_sessions
     from .opencode import parse_db
 
     init_db()
     entries = parse_all()
     entries.extend(parse_db())
-    return upsert_entries(entries)
+
+    # Codex rollouts are large and append-only, so only re-read recent files.
+    since = get_sync_state("codex")
+    started = datetime.now()
+    if since is not None:
+        since = since - timedelta(hours=1)
+    entries.extend(parse_sessions(since=since))
+    new_rows = upsert_entries(entries)
+    if get_sessions_dir_exists():
+        set_sync_state("codex", started)
+    return new_rows
+
+
+def get_sessions_dir_exists() -> bool:
+    from .codex import get_sessions_dir
+
+    return get_sessions_dir() is not None
 
 
 def query_range(start: date, end: date) -> list[dict]:

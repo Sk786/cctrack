@@ -2,7 +2,7 @@
 
 Know your AI activity. Keep it local. Share a heatmap.
 
-`cctrack` tracks AI usage from Claude Code, OpenCode, and OpenAI, then turns it into useful terminal reports and a GitHub-style activity heatmap. Local sources need no account or API key. Export a heatmap as SVG for your profile or README.
+`cctrack` tracks AI usage from Claude Code, Codex CLI, OpenCode, and OpenAI, then turns it into useful terminal reports and a GitHub-style activity heatmap. Local sources need no account or API key. Export a heatmap as SVG for your profile or README.
 
 **Local-first:** your session history stays on your machine. No account or upload is required to use the CLI.
 
@@ -224,11 +224,32 @@ cctrack reads usage that the tools already keep on your machine:
 | --- | --- | --- |
 | Claude Code | `~/.claude/projects/**/*.jsonl` | Parsed from session transcripts |
 | OpenCode | `~/.local/share/opencode/opencode.db` | Read-only; includes reasoning tokens and provider-reported cost |
+| Codex CLI | `~/.codex/sessions/**/rollout-*.jsonl` | Per-turn usage deltas; only new files are read after the first sync |
 | OpenAI | Usage API | Opt-in via `cctrack openai-sync`, needs an organization API key |
 
 Everything is stored in `~/.config/cctrack/usage.db`, and every command queries that file — fast and offline.
 
-**Cost resolution:** when OpenCode reports what a request actually cost, cctrack uses that number. Otherwise it estimates from the bundled price table. Reasoning tokens are billed at the output rate.
+**Cost resolution:** when a tool reports what a request actually cost (OpenCode does), cctrack uses that number. Otherwise it estimates from the bundled price table, matching the most specific model name (`gpt-4o-mini` is not priced as `gpt-4o`).
+
+**Reasoning tokens** are stored for insight but never billed twice — they are a subset of output tokens.
+
+If totals ever look wrong after an upgrade, rebuild from source:
+
+```bash
+cctrack resync
+```
+
+### Sources that can't be tracked locally
+
+Some popular tools keep usage on their servers, so there is nothing local to read. cctrack deliberately doesn't scrape private APIs for them.
+
+| Tool | Why not |
+| --- | --- |
+| Cursor | Token usage lives in Cursor's backend. `~/.cursor/ai-tracking/` records AI-written lines and scored commits, not tokens. |
+| GitHub Copilot | Billed per seat. VS Code chat sessions store messages and timings but no token counts. |
+| Gemini / Antigravity | Conversation history is protobuf with no stable schema. |
+
+If one of these adds local usage data, adding a source is a single module.
 
 The CLI never uploads local transcripts or project names.
 
@@ -257,7 +278,7 @@ All cost values are color coded consistently across every command:
 
 ## Roadmap
 
-- **Available** — Claude Code and OpenCode tracking, OpenAI Usage API import, reports, and local activity heatmap/SVG export
+- **Available** — Claude Code, Codex CLI and OpenCode tracking, OpenAI Usage API import, reports, and local activity heatmap/SVG export
 - **Exploring** — Opt-in shareable profiles and private team boards
 - **Future** — More local AI usage sources based on demand
 

@@ -17,13 +17,8 @@ class ModelStats:
 
     @property
     def total_tokens(self) -> int:
-        return (
-            self.input_tokens
-            + self.output_tokens
-            + self.cache_write_tokens
-            + self.cache_read_tokens
-            + self.reasoning_tokens
-        )
+        # reasoning_tokens is a subset of output_tokens and only kept for insight
+        return self.input_tokens + self.output_tokens + self.cache_write_tokens + self.cache_read_tokens
 
 
 @dataclass
@@ -62,7 +57,7 @@ def calc_cost(
     per_m = 1_000_000
     return (
         input_tokens * prices["input"] / per_m
-        + (output_tokens + reasoning_tokens) * prices["output"] / per_m
+        + output_tokens * prices["output"] / per_m
         + cache_write_tokens * prices["cache_write"] / per_m
         + cache_read_tokens * prices["cache_read"] / per_m
     )

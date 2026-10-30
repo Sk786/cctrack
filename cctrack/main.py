@@ -8,8 +8,12 @@ from .config import (
     load_prices, get_user_prices_path, get_bundled_prices_path, get_claude_projects_dir,
     get_openai_api_key, save_openai_api_key, get_openai_key_path,
 )
-from .storage import sync, query_range, query_all, query_by_project, get_date_bounds, get_db_path, query_today_totals
+from .storage import (
+    sync, query_range, query_all, query_by_project, get_date_bounds, get_db_path,
+    query_today_totals, reset_db,
+)
 from .opencode import get_db_path as get_opencode_db_path
+from .codex import get_sessions_dir as get_codex_sessions_dir
 from .stats import summarize_rows, daily_breakdown
 from .heatmap import METRICS, aggregate_daily, export_svg, render_heatmap
 from .display import (
@@ -144,6 +148,19 @@ def heatmap(
 
 
 @app.command()
+def resync():
+    """Rebuild the local database from all sources.
+
+    Use this after upgrading if cost or token totals look wrong. The database
+    only holds derived data, so nothing is lost — everything is re-read from
+    the tools' own local stores.
+    """
+    dropped = reset_db()
+    new = sync()
+    console.print(f"[green]Rebuilt local database.[/green] Dropped {dropped:,} rows, imported {new:,}.")
+
+
+@app.command()
 def prompt(
     format: str = typer.Option("both", "--format", "-f", help="Output format: 'tokens', 'cost', or 'both'."),
 ):
@@ -185,6 +202,7 @@ def setup():
         user_prices_path=str(get_user_prices_path()),
         openai_key_path=str(get_openai_key_path()),
         opencode_db_path=str(get_opencode_db_path() or "not found"),
+        codex_sessions_dir=str(get_codex_sessions_dir() or "not found"),
     )
 
 
