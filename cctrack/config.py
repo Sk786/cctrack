@@ -17,12 +17,16 @@ def load_prices() -> dict:
 
 
 def get_pricing(model: str) -> tuple[dict[str, float], str]:
-    """Return (price_dict, source_path) for a model name."""
+    """Return (price_dict, source_path) for a model name.
+
+    Matches the longest configured prefix, so ``gpt-4o-mini`` doesn't resolve
+    to the ``gpt-4o`` entry.
+    """
     data = load_prices()
     models: dict = data.get("models", {})
-    for key, prices in models.items():
-        if model.startswith(key):
-            return prices, data["_source"]
+    matches = [key for key in models if model.startswith(key)]
+    if matches:
+        return models[max(matches, key=len)], data["_source"]
     return data["default"], data["_source"]
 
 

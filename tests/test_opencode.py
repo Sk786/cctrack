@@ -67,7 +67,8 @@ def test_parse_db_reads_assistant_usage(tmp_path, monkeypatch):
     assert entry.provider == "opencode"
     assert entry.model == "deepseek-v4.1-flash-free"
     assert entry.input_tokens == 100
-    assert entry.output_tokens == 20
+    # reasoning is reported separately and folded into billable output
+    assert entry.output_tokens == 25
     assert entry.reasoning_tokens == 5
     assert entry.cache_read_tokens == 50
     assert entry.reported_cost == 0.0

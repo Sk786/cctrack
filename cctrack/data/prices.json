@@ -1,66 +1,186 @@
 {
-  "_comment": "Prices in USD per 1,000,000 tokens.",
-  "_updated": "2026-10-17",
+  "_comment": "Prices in USD per 1,000,000 tokens. OpenAI models use standard pricing; codex variants are priced like their base model.",
+  "_updated": "2026-10-30",
   "models": {
     "claude-sonnet-4-6": {
-      "input": 3.00,
-      "output": 15.00,
+      "input": 3.0,
+      "output": 15.0,
       "cache_write": 3.75,
-      "cache_read": 0.30
+      "cache_read": 0.3
     },
     "claude-opus-4-8": {
-      "input": 5.00,
-      "output": 25.00,
+      "input": 5.0,
+      "output": 25.0,
       "cache_write": 6.25,
-      "cache_read": 0.50
+      "cache_read": 0.5
     },
     "claude-haiku-4-5": {
-      "input": 1.00,
-      "output": 5.00,
+      "input": 1.0,
+      "output": 5.0,
       "cache_write": 1.25,
-      "cache_read": 0.10
+      "cache_read": 0.1
     },
     "gpt-4o": {
-      "input": 2.50,
-      "output": 10.00,
-      "cache_write": 0.00,
+      "input": 2.5,
+      "output": 10.0,
+      "cache_write": 0.0,
       "cache_read": 1.25
     },
     "gpt-4o-mini": {
       "input": 0.15,
-      "output": 0.60,
-      "cache_write": 0.00,
+      "output": 0.6,
+      "cache_write": 0.0,
       "cache_read": 0.075
     },
     "gpt-4.1": {
-      "input": 2.00,
-      "output": 8.00,
-      "cache_write": 0.00,
-      "cache_read": 0.50
+      "input": 2.0,
+      "output": 8.0,
+      "cache_write": 0.0,
+      "cache_read": 0.5
     },
     "gpt-4.1-mini": {
-      "input": 0.40,
-      "output": 1.60,
-      "cache_write": 0.00,
-      "cache_read": 0.10
+      "input": 0.4,
+      "output": 1.6,
+      "cache_write": 0.0,
+      "cache_read": 0.1
     },
     "o3": {
-      "input": 2.00,
-      "output": 8.00,
-      "cache_write": 0.00,
-      "cache_read": 0.50
+      "input": 2.0,
+      "output": 8.0,
+      "cache_write": 0.0,
+      "cache_read": 0.5
     },
     "o4-mini": {
-      "input": 1.10,
-      "output": 4.40,
-      "cache_write": 0.00,
+      "input": 1.1,
+      "output": 4.4,
+      "cache_write": 0.0,
       "cache_read": 0.275
+    },
+    "gpt-6-astra": {
+      "input": 10.0,
+      "output": 50.0,
+      "cache_write": 0.0,
+      "cache_read": 1.0
+    },
+    "gpt-6-sol": {
+      "input": 2.0,
+      "output": 10.0,
+      "cache_write": 0.0,
+      "cache_read": 0.2
+    },
+    "gpt-6-luna": {
+      "input": 0.1,
+      "output": 0.5,
+      "cache_write": 0.0,
+      "cache_read": 0.01
+    },
+    "gpt-6.1-sol": {
+      "input": 2.0,
+      "output": 10.0,
+      "cache_write": 0.0,
+      "cache_read": 0.1
+    },
+    "gpt-5.6-sol": {
+      "input": 4.0,
+      "output": 20.0,
+      "cache_write": 0.0,
+      "cache_read": 0.4
+    },
+    "gpt-5.6-terra": {
+      "input": 2.0,
+      "output": 12.0,
+      "cache_write": 0.0,
+      "cache_read": 0.2
+    },
+    "gpt-5.6-luna": {
+      "input": 0.2,
+      "output": 1.2,
+      "cache_write": 0.0,
+      "cache_read": 0.02
+    },
+    "gpt-5.5": {
+      "input": 5.0,
+      "output": 30.0,
+      "cache_write": 0.0,
+      "cache_read": 0.5
+    },
+    "gpt-5.4": {
+      "input": 2.5,
+      "output": 15.0,
+      "cache_write": 0.0,
+      "cache_read": 0.25
+    },
+    "gpt-5.4-mini": {
+      "input": 0.75,
+      "output": 4.5,
+      "cache_write": 0.0,
+      "cache_read": 0.075
+    },
+    "gpt-5.4-nano": {
+      "input": 0.2,
+      "output": 1.25,
+      "cache_write": 0.0,
+      "cache_read": 0.02
+    },
+    "gpt-5.3-codex": {
+      "input": 1.75,
+      "output": 14.0,
+      "cache_write": 0.0,
+      "cache_read": 0.175
+    },
+    "gpt-5.2": {
+      "input": 1.75,
+      "output": 14.0,
+      "cache_write": 0.0,
+      "cache_read": 0.175
+    },
+    "gpt-5.2-codex": {
+      "input": 1.75,
+      "output": 14.0,
+      "cache_write": 0.0,
+      "cache_read": 0.175
+    },
+    "gpt-5.1": {
+      "input": 1.25,
+      "output": 10.0,
+      "cache_write": 0.0,
+      "cache_read": 0.125
+    },
+    "gpt-5.1-codex": {
+      "input": 1.25,
+      "output": 10.0,
+      "cache_write": 0.0,
+      "cache_read": 0.125
+    },
+    "gpt-5.1-codex-mini": {
+      "input": 0.25,
+      "output": 2.0,
+      "cache_write": 0.0,
+      "cache_read": 0.025
+    },
+    "gpt-5": {
+      "input": 1.25,
+      "output": 10.0,
+      "cache_write": 0.0,
+      "cache_read": 0.125
+    },
+    "gpt-5-mini": {
+      "input": 0.25,
+      "output": 2.0,
+      "cache_write": 0.0,
+      "cache_read": 0.025
+    },
+    "gpt-5-nano": {
+      "input": 0.05,
+      "output": 0.4,
+      "cache_write": 0.0,
+      "cache_read": 0.005
     }
   },
   "default": {
-    "input": 3.00,
-    "output": 15.00,
+    "input": 3.0,
+    "output": 15.0,
     "cache_write": 3.75,
-    "cache_read": 0.30
+    "cache_read": 0.3
   }
 }

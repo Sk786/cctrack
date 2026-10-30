@@ -8,9 +8,13 @@ def test_calc_cost_prefers_reported_cost():
     assert calc_cost("claude-sonnet-4-6", 1_000_000, 0, 0, 0, reported_cost=0.42) == 0.42
 
 
-def test_calc_cost_bills_reasoning_at_output_rate():
-    # 1M reasoning tokens on Sonnet's $15/M output rate
-    assert abs(calc_cost("claude-sonnet-4-6", 0, 0, 0, 0, reasoning_tokens=1_000_000) - 15.0) < 0.0001
+def test_reasoning_is_not_billed_twice():
+    # Providers report output_tokens as already including reasoning, so the
+    # reasoning count must not change the cost.
+    base = calc_cost("claude-sonnet-4-6", 0, 1_000_000, 0, 0)
+    with_reasoning = calc_cost("claude-sonnet-4-6", 0, 1_000_000, 0, 0, reasoning_tokens=400_000)
+    assert abs(base - 15.0) < 0.0001
+    assert base == with_reasoning
 
 
 def test_summarize_rows_uses_reported_cost_and_counts_reasoning():
@@ -27,7 +31,9 @@ def test_summarize_rows_uses_reported_cost_and_counts_reasoning():
     ]
     result = summarize_rows(rows)["deepseek-v4.1-flash-free"]
     assert result.cost == 0.0
-    assert result.total_tokens == 175
+    # reasoning is a subset of output, so it is not added again
+    assert result.total_tokens == 170
+    assert result.reasoning_tokens == 5
 
 
 def test_calc_cost_zero():

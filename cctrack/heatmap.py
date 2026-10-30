@@ -45,7 +45,6 @@ def aggregate_daily(rows: list[dict], metric: str = "tokens") -> dict[date, floa
                 "output_tokens",
                 "cache_write_tokens",
                 "cache_read_tokens",
-                "reasoning_tokens",
             )
         )
         if metric == "tokens":

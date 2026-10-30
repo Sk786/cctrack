@@ -112,7 +112,9 @@ def parse_db(days: int | None = 365) -> list[TokenEntry]:
                 model=data.get("modelID") or "unknown",
                 project=(row["directory"] or "").replace("\\", "/").lstrip("/"),
                 input_tokens=input_tokens,
-                output_tokens=output_tokens,
+                # OpenCode reports reasoning as its own field, unlike Codex where
+                # it is already part of output_tokens.
+                output_tokens=output_tokens + reasoning,
                 cache_write_tokens=cache_write,
                 cache_read_tokens=cache_read,
                 provider=data.get("providerID") or "opencode",
